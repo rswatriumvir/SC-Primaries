@@ -2,6 +2,10 @@ library(tidycensus)
 library(rvest)
 library(janitor)
 library(dplyr)
+library(devtools)
+library(urbnmapr)
+library(ggplot2)
+
 
 ## load data ----------------------------------------------------------------------------
 
@@ -51,3 +55,32 @@ sc_prim$turnout_16 = as.numeric(sc_prim$turnout_16)
 
 ##calculations -------------------------------------------------------------------
 sc_prim$turnout_diff = sc_prim$turnout_20 - sc_prim$turnout_16
+
+##mapping -----------------------------------------------------------------
+counties_sf = get_urbn_map("counties", sf = TRUE)
+
+sc_sf = counties_sf %>%
+  filter(state_name == "South Carolina") %>%
+  mutate(county_name = gsub("County", "", county_name)) %>%
+  rename(County = county_name)
+
+sc_sf = as.data.frame(sc_sf)
+
+sc_prim_map = left_join(sc_sf, sc_prim, by = "County")
+
+sc_sf_1 = sc_sf %>%
+  left_join(sc_prim, by = "County")
+
+COUN
+sc_prim_map %>%
+ggplot(mapping = aes(long, lat, group = group, fill = turnout_diff)) +
+  geom_polygon(color = NA) +
+  scale_fill_gradientn(labels = scales::percent,
+                       guide = guide_colorbar(title.position = "top")) +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+  theme(legend.title = element_text(),
+        legend.key.width = unit(.5, "in")) +
+  labs(fill = "turnout_diff") +
+  theme_urban_map()
+
+
